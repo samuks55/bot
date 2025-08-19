@@ -1621,7 +1621,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       try {
         // Registrar no canal de resultados
         const resultadosId = getResultadosId(guildId);
-        const resultados = await guild.channels.fetch(resultadosId);
+        const resultados = guild.channels.cache.get(resultadosId) || await guild.channels.fetch(resultadosId).catch(() => null);
         
         if (resultados) {
           const resultadoEmbed = new EmbedBuilder()
@@ -1646,6 +1646,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
           await resultados.send({ embeds: [resultadoEmbed] });
           console.log(`📊 Reprovação registrada no canal de resultados: ${dados.membro.user.tag}`);
+        } else {
+          console.error(`❌ Canal de resultados não encontrado: ${resultadosId}`);
         }
 
         // Tentar enviar DM para o usuário
@@ -1770,7 +1772,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       try {
         // Registrar no canal de resultados
         const resultadosId = getResultadosId(guildId);
-        const resultados = await guild.channels.fetch(resultadosId);
+        const resultados = guild.channels.cache.get(resultadosId) || await guild.channels.fetch(resultadosId).catch(() => null);
         
         if (resultados) {
           const resultadoEmbed = new EmbedBuilder()
@@ -1805,6 +1807,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
           await resultados.send({ embeds: [resultadoEmbed] });
           console.log(`📊 Aprovação registrada no canal de resultados: ${dados.membro.user.tag}`);
+        } else {
+          console.error(`❌ Canal de resultados não encontrado: ${resultadosId}`);
+        }
+        
+        // Atualizar placar imediatamente após aprovação
+        try {
+          await atualizarMensagemPlacar(guild);
+          console.log(`🏆 Placar atualizado após aprovação de ${dados.membro.user.tag}`);
+        } catch (placarError) {
+          console.error(`❌ Erro ao atualizar placar:`, placarError);
         }
 
         // Tentar enviar DM de boas-vindas
