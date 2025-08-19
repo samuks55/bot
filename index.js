@@ -1621,9 +1621,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
       try {
         // Registrar no canal de resultados
         const resultadosId = getResultadosId(guildId);
-        const resultados = guild.channels.cache.get(resultadosId) || await guild.channels.fetch(resultadosId).catch(() => null);
+        console.log(`🔍 Buscando canal de resultados (reprovação) com ID: ${resultadosId}`);
         
-        if (resultados) {
+        if (!resultadosId) {
+          console.error('❌ ID do canal de resultados não configurado para reprovação');
+          return;
+        }
+        
+        const resultados = await guild.channels.fetch(resultadosId).catch(err => {
+          console.error(`❌ Erro ao buscar canal de resultados:`, err);
+          return null;
+        });
+        
+        if (!resultados) {
+          console.error(`❌ Canal de resultados não encontrado com ID: ${resultadosId}`);
+          return;
+        }
+        
+        console.log(`✅ Canal de resultados encontrado: ${resultados.name}`);
+        
+        try {
           const resultadoEmbed = new EmbedBuilder()
             .setColor(CORES.ERRO)
             .setTitle("❌ Candidato Reprovado")
@@ -1644,8 +1661,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setThumbnail(dados.membro.user.displayAvatarURL())
             .setFooter({ text: "Sistema de Recrutamento" });
 
-          await resultados.send({ embeds: [resultadoEmbed] });
+          const mensagemEnviada = await resultados.send({ embeds: [resultadoEmbed] });
           console.log(`📊 Reprovação registrada no canal de resultados: ${dados.membro.user.tag}`);
+          console.log(`📨 Mensagem enviada com ID: ${mensagemEnviada.id}`);
+        } catch (sendError) {
+          console.error(`❌ Erro ao enviar mensagem de reprovação para canal de resultados:`, sendError);
+          console.error(`Canal: ${resultados.name} (${resultados.id})`);
+          console.error(`Permissões do bot no canal:`, resultados.permissionsFor(guild.members.me));
         } else {
           console.error(`❌ Canal de resultados não encontrado: ${resultadosId}`);
         }
